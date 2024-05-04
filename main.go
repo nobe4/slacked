@@ -6,7 +6,9 @@ import (
 	"log"
 	"net/url"
 	"strings"
+	"time"
 
+	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
@@ -17,28 +19,78 @@ import (
 
 func main() {
 	a := app.New()
-	w := a.NewWindow("Hello")
+	w := a.NewWindow("Slacked")
+	w.Resize(fyne.Size{Width: 600, Height: 400})
 
-	input := widget.NewEntry()
-	input.SetPlaceHolder("slack url")
+	output := &widget.TextGrid{}
 
-	output := widget.NewTextGrid()
+	input := &widget.Entry{PlaceHolder: "slack url"}
+	archiveButton := &widget.Button{Text: "Archive"}
+	copyButton := &widget.Button{Text: "Copy to clipboard"}
 
-	w.SetContent(container.NewVBox(
-		input,
-		widget.NewButton("Archive", func() {
-			h, err := readSlack(input.Text)
-			if err != nil {
-				panic(err)
-			}
-			output.SetText(h)
-		}),
-		widget.NewSeparator(),
-		output,
-		widget.NewButton("Copy", func() {
-			w.Clipboard().SetContent(output.Text())
-		}),
-	))
+	archive := func(u string) {
+		input.Disable()
+		archiveButton.SetText("Archiving ...")
+		archiveButton.Disable()
+		copyButton.Disable()
+
+		defer func() {
+			input.Enable()
+			archiveButton.SetText("Archive")
+			archiveButton.Enable()
+		}()
+
+		if u == "" {
+			output.SetText("ERROR: undefined url")
+			return
+		}
+
+		h, err := readSlack(u)
+		if err != nil {
+			output.SetText(err.Error())
+			return
+		}
+
+		output.SetText(h)
+		copyButton.Enable()
+	}
+
+	input.OnSubmitted = archive
+	archiveButton.OnTapped = func() { archive(input.Text) }
+
+	copyButton.Disable()
+	copyButton.OnTapped = func() {
+		copyButton.SetText("Copied to clipboard!")
+		w.Clipboard().SetContent(output.Text())
+
+		t := time.NewTimer(time.Second)
+		go func() {
+			<-t.C
+			copyButton.SetText("Copy to clipboard")
+		}()
+
+	}
+
+	w.SetContent(
+		container.NewBorder(
+			container.NewBorder(
+				nil,
+				nil,
+				nil,
+				archiveButton,
+				input,
+			),
+			container.NewBorder(
+				nil,
+				nil,
+				nil,
+				copyButton,
+			),
+			nil,
+			nil,
+			container.NewScroll(output),
+		),
+	)
 
 	w.ShowAndRun()
 }

@@ -14,4 +14,4 @@ case "$PLATFORM" in
     * ) echo "Unsupported platform: $PLATFORM" && exit 1 ;;
 esac
 
-goreleaser release --config "${DEST}" --clean --skip-publish --release-notes="$(mktemp)"
+goreleaser release --config "${DEST}" --clean --skip=publish --release-notes="$(mktemp)"

@@ -18,6 +18,8 @@ builds:
     goarch: [amd64, arm64]
     binary: bin/slacked
     main: ./main.go
+    env:
+      - "{{- if eq .Arch 'amd64'}}CGO_ENABLED=1{{- end }}"
 
   - id: linux #build:linux
     goos: [linux]

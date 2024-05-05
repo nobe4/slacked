@@ -1,0 +1,52 @@
+# Don't run `goreleaser` directly: use script/release
+
+version: 1
+
+release:
+  prerelease: auto
+  draft: true
+  name_template: "{{ .ProjectName }} {{ .Version }}"
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+
+  - id: macos #build:macos
+    goos: [darwin]
+    goarch: [amd64, arm64]
+    binary: bin/slacked
+    main: ./main.go
+
+  - id: linux #build:linux
+    goos: [linux]
+    goarch: [386, arm, amd64, arm64]
+    binary: bin/slacked
+    main: ./main.go
+
+  - id: windows #build:windows
+    goos: [windows]
+    goarch: [386, amd64, arm64]
+    binary: bin/slacked
+    main: ./main.go
+
+archives:
+  - format: tar.gz
+    name_template: >-
+      {{ .ProjectName }}_
+      {{- title .Os }}_
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else if eq .Arch "386" }}i386
+      {{- else }}{{ .Arch }}{{ end }}
+      {{- if .Arm }}v{{ .Arm }}{{ end }}
+    format_overrides:
+      - goos: windows
+        format: zip
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"

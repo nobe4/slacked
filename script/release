@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# Usage: release PLATFORM
+
+set -e
+
+PLATFORM="${1:?}"
+SOURCE=".goreleaser.yaml"
+DEST=".goreleaser.generated.yaml"
+
+case "$PLATFORM" in
+    linux   ) sed '/#build:windows/,/^$/d; /#build:macos/,/^$/d' "${SOURCE}" > "${DEST}" ;;
+    macos   ) sed '/#build:windows/,/^$/d; /#build:linux/,/^$/d' "${SOURCE}" > "${DEST}" ;;
+    windows ) sed '/#build:linux/,/^$/d; /#build:macos/,/^$/d'   "${SOURCE}" > "${DEST}" ;;
+    * ) echo "Unsupported platform: $PLATFORM" && exit 1 ;;
+esac
+
+goreleaser release --config "${DEST}" --clean --skip-publish --release-notes="$(mktemp)"

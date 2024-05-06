@@ -77,7 +77,7 @@ jobs:
           install-only: true
       - name: Build release binaries
         shell: bash
-        run: script/release --platform windows
+        run: script/release windows
       - uses: actions/upload-artifact@v4
         with:
           name: windows

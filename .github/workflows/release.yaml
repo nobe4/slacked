@@ -27,7 +27,9 @@ jobs:
         with:
           install-only: true
       - name: Build release binaries
-        run: script/release linux
+        run: |
+          apt-get install gcc-multilib
+          script/release linux
       - uses: actions/upload-artifact@v4
         with:
           name: linux

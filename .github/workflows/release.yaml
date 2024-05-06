@@ -1,0 +1,13 @@
+name: Release
+run-name: slacked release
+
+on:
+  workflow_dispatch:
+
+jobs:
+
+  linux:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        run: echo 'hello github'

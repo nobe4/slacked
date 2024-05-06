@@ -28,7 +28,7 @@ jobs:
           install-only: true
       - name: Build release binaries
         run: |
-          sudo apt-get install gcc-multilib
+          sudo apt-get install gcc-multilib libgl1-mesa-dev
           script/release linux
       - uses: actions/upload-artifact@v4
         with:

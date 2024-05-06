@@ -28,7 +28,7 @@ jobs:
           install-only: true
       - name: Build release binaries
         run: |
-          sudo apt-get install gcc-multilib libgl1-mesa-dev
+          sudo apt-get install gcc-multilib libgl1-mesa-dev libxcursor-dev
           script/release linux
       - uses: actions/upload-artifact@v4
         with:
@@ -64,30 +64,30 @@ jobs:
             dist/*.tar.gz
             dist/*.zip
 
-  windows:
-    runs-on: windows-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version-file: 'go.mod'
-      - name: Install GoReleaser
-        uses: goreleaser/goreleaser-action@v5
-        with:
-          install-only: true
-      - name: Build release binaries
-        shell: bash
-        run: script/release windows
-      - uses: actions/upload-artifact@v4
-        with:
-          name: windows
-          if-no-files-found: error
-          retention-days: 7
-          path: |
-            dist/*.zip
-            dist/*.msi
+  # windows:
+  #   runs-on: windows-latest
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v4
+  #     - name: Set up Go
+  #       uses: actions/setup-go@v5
+  #       with:
+  #         go-version-file: 'go.mod'
+  #     - name: Install GoReleaser
+  #       uses: goreleaser/goreleaser-action@v5
+  #       with:
+  #         install-only: true
+  #     - name: Build release binaries
+  #       shell: bash
+  #       run: script/release windows
+  #     - uses: actions/upload-artifact@v4
+  #       with:
+  #         name: windows
+  #         if-no-files-found: error
+  #         retention-days: 7
+  #         path: |
+  #           dist/*.zip
+  #           dist/*.msi
 
   release:
     runs-on: ubuntu-latest

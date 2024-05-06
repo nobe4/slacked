@@ -1,18 +1,32 @@
 #!/usr/bin/env bash
-# Usage: release PLATFORM
+# Usage: release
+#
+# Requirements:
+#  - On a `darwin` host
+#  - https://github.com/cli/cli/ installed and configured
+#  - https://github.com/fyne-io/fyne-cross installed
 
 set -e
 
-PLATFORM="${1:?}"
-SOURCE=".goreleaser.yaml"
-DEST=".goreleaser.generated.yaml"
+APP_ID="nobe4.slacked"
+VERSION="0.0.0"
 
-case "$PLATFORM" in
-    linux   ) sed '/- id: windows/,/^$/d; /- id: darwin/,/^$/d' "${SOURCE}" > "${DEST}" ;;
-    darwin  ) sed '/- id: windows/,/^$/d; /- id: linux/,/^$/d'  "${SOURCE}" > "${DEST}" ;;
-    windows ) sed '/- id: linux/,/^$/d; /- id: darwin/,/^$/d'   "${SOURCE}" > "${DEST}" ;;
-    * ) echo "Unsupported platform: $PLATFORM" && exit 1 ;;
-esac
+export GOFLAGS="--ldflags=-X=main.version=${VERSION}"
 
-# TODO: remove `--snapshot`
-goreleaser release --snapshot --config "${DEST}" --clean --skip=publish
+fyne-cross darwin -arch='amd64,arm64' -app-id "$APP_ID"
+fyne-cross linux -arch='amd64,arm64'
+fyne-cross windows -arch='amd64,arm64' -app-id "$APP_ID"
+
+rm -rf ./dist
+mkdir -p ./dist
+
+mv fyne-cross/dist/linux-amd64/slacked.tar.xz dist/slacked-linux-amd64.tar.xz
+mv fyne-cross/dist/linux-arm64/slacked.tar.xz dist/slacked-linux-arm64.tar.xz
+mv fyne-cross/dist/windows-amd64/slacked.exe.zip dist/slacked-windows-amd64.zip
+mv fyne-cross/dist/windows-arm64/slacked.exe.zip dist/slacked-windows-arm64.zip
+(cd fyne-cross/dist/darwin-amd64 && zip -r ../../../dist/slacked-darwin-amd64.zip slacked.app)
+(cd fyne-cross/dist/darwin-arm64 && zip -r ../../../dist/slacked-darwin-arm64.zip slacked.app)
+
+(cd dist && shasum -a 256 * > shasmums.txt)
+
+gh release create "${VERSION}" --generate-notes --prerelease --draft dist/*

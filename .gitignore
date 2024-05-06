@@ -18,4 +18,4 @@
 go.work
 
 dist/
-.goreleaser.generated.yaml
+fyne-cross/

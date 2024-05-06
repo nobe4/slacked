@@ -13,31 +13,35 @@ before:
 
 builds:
 
-  - id: macos #build:macos
+  - id: darwin
     goos: [darwin]
     goarch: [amd64, arm64]
     binary: bin/slacked
     main: ./main.go
     env:
-      - "{{- if eq .Arch 'amd64'}}CGO_ENABLED=1{{- end }}"
+      - CGO_ENABLED=1
 
-  - id: linux #build:linux
+  - id: linux
     goos: [linux]
     goarch: [386, arm, amd64, arm64]
     binary: bin/slacked
     main: ./main.go
+    env:
+      - CGO_ENABLED=1
 
-  - id: windows #build:windows
+  - id: windows
     goos: [windows]
     goarch: [386, amd64, arm64]
     binary: bin/slacked
     main: ./main.go
+    env:
+      - CGO_ENABLED=1
 
 archives:
   - format: tar.gz
     name_template: >-
       {{ .ProjectName }}_
-      {{- title .Os }}_
+      {{- .Os }}_
       {{- if eq .Arch "amd64" }}x86_64
       {{- else if eq .Arch "386" }}i386
       {{- else }}{{ .Arch }}{{ end }}

@@ -8,10 +8,11 @@ SOURCE=".goreleaser.yaml"
 DEST=".goreleaser.generated.yaml"
 
 case "$PLATFORM" in
-    linux   ) sed '/#build:windows/,/^$/d; /#build:macos/,/^$/d' "${SOURCE}" > "${DEST}" ;;
-    macos   ) sed '/#build:windows/,/^$/d; /#build:linux/,/^$/d' "${SOURCE}" > "${DEST}" ;;
-    windows ) sed '/#build:linux/,/^$/d; /#build:macos/,/^$/d'   "${SOURCE}" > "${DEST}" ;;
+    linux   ) sed '/- id: windows/,/^$/d; /- id: darwin/,/^$/d' "${SOURCE}" > "${DEST}" ;;
+    darwin  ) sed '/- id: windows/,/^$/d; /- id: linux/,/^$/d'  "${SOURCE}" > "${DEST}" ;;
+    windows ) sed '/- id: linux/,/^$/d; /- id: darwin/,/^$/d'   "${SOURCE}" > "${DEST}" ;;
     * ) echo "Unsupported platform: $PLATFORM" && exit 1 ;;
 esac
 
-goreleaser release --config "${DEST}" --clean --skip=publish --release-notes="$(mktemp)"
+# TODO: remove `--snapshot`
+goreleaser release --snapshot --config "${DEST}" --clean --skip=publish

@@ -6,11 +6,9 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"net/http"
 	"os"
 	"path"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/rneatherway/slack"
@@ -39,55 +37,11 @@ type Message struct {
 	ReplyCount  int `json:"reply_count"`
 }
 
-type SendMessage struct {
-	ThreadTS    string       `json:"thread_ts,omitempty"`
-	Channel     string       `json:"channel"` // required
-	Text        string       `json:"text,omitempty"`
-	Attachments []Attachment `json:"attachments,omitempty"`
-}
-
-type SendMessageResponse struct {
-	OK      bool    `json:"ok"`
-	Error   string  `json:"error,omitempty"`
-	Warning string  `json:"warning,omitempty"`
-	TS      string  `json:"ts,omitempty"`
-	Message Message `json:"message,omitempty"`
-}
-
-type BotProfile struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
-}
-
-func (r *SendMessageResponse) Output(team, channelID string) string {
-	if !r.OK {
-		return fmt.Sprintf("Error: %s", r.Error)
-	}
-	return fmt.Sprintf("Message permalink https://%s.slack.com/archives/%s/p%s", team, channelID, strings.ReplaceAll(r.TS, ".", ""))
-}
-
 type HistoryResponse struct {
 	CursorResponseMetadata
 	Ok       bool
 	HasMore  bool `json:"has_more"`
 	Messages []Message
-}
-
-type Channel struct {
-	ID         string
-	Name       string
-	Is_Channel bool
-}
-
-type ChannelInfoResponse struct {
-	Ok      bool
-	Channel Channel
-}
-
-type ConversationsResponse struct {
-	CursorResponseMetadata
-	Ok       bool
-	Channels []Channel
 }
 
 type User struct {
@@ -128,7 +82,7 @@ func New(team string, log *log.Logger) (*SlackClient, error) {
 		}
 		dataHome = path.Join(home, ".local", "share")
 	}
-	cachePath := path.Join(dataHome, "gh-slack")
+	cachePath := path.Join(dataHome, "slacked")
 
 	client := slack.NewClient(team)
 	err := client.WithCookieAuth()
@@ -145,25 +99,6 @@ func New(team string, log *log.Logger) (*SlackClient, error) {
 	}
 
 	return c, c.loadCache()
-}
-
-// Null produces a SlackClient suitable for testing that does not try to load
-// the Slack token or cookies from disk, and starts with an empty cache.
-func Null(team string, roundTripper http.RoundTripper) (*SlackClient, error) {
-	cacheFile, err := os.CreateTemp("", "gh-slack-cache")
-	if err != nil {
-		return nil, err
-	}
-
-	client := slack.NewClient("test-team")
-	client.WithHTTPClient(&http.Client{Transport: roundTripper})
-
-	return &SlackClient{
-		team:      team,
-		client:    client,
-		cachePath: cacheFile.Name(),
-		tz:        time.UTC,
-	}, nil
 }
 
 func (c *SlackClient) UsernameForMessage(message Message) (string, error) {
@@ -184,77 +119,7 @@ func (c *SlackClient) get(path string, params map[string]string) ([]byte, error)
 	return c.API("GET", path, params, []byte("{}"))
 }
 
-func (c *SlackClient) post(path string, params map[string]string, msg *SendMessage) ([]byte, error) {
-	messageBytes, err := json.Marshal(msg)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal message: %w", err)
-	}
-
-	return c.API("POST", path, params, messageBytes)
-}
-
-func (c *SlackClient) ChannelInfo(id string) (*Channel, error) {
-	body, err := c.get("conversations.info",
-		map[string]string{"channel": id})
-	if err != nil {
-		return nil, err
-	}
-
-	channelInfoReponse := &ChannelInfoResponse{}
-	err = json.Unmarshal(body, channelInfoReponse)
-	if err != nil {
-		return nil, err
-	}
-
-	if !channelInfoReponse.Ok {
-		return nil, fmt.Errorf("conversations.info response not OK: %s", body)
-	}
-
-	return &channelInfoReponse.Channel, nil
-}
-
-func (c *SlackClient) conversations() ([]Channel, error) {
-	fmt.Fprintf(os.Stderr, "Populating channel cache (this may take a while)...")
-
-	channels := make([]Channel, 0, 1000)
-	conversations := &ConversationsResponse{}
-	for {
-		c.log.Printf("Fetching conversations with cursor %q", conversations.ResponseMetadata.NextCursor)
-		body, err := c.get("conversations.list",
-			map[string]string{
-				"cursor":           conversations.ResponseMetadata.NextCursor,
-				"exclude_archived": "true",
-				"limit":            "1000",
-
-				// TODO: we might want to support DMs in the future
-				"types": "public_channel, private_channel",
-			},
-		)
-		if err != nil {
-			return nil, err
-		}
-
-		if err = json.Unmarshal(body, conversations); err != nil {
-			return nil, err
-		}
-
-		if !conversations.Ok {
-			return nil, fmt.Errorf("conversations response not OK: %s", body)
-		}
-
-		channels = append(channels, conversations.Channels...)
-		fmt.Fprintf(os.Stderr, "%d...", len(channels))
-
-		if conversations.ResponseMetadata.NextCursor == "" {
-			break
-		}
-	}
-
-	fmt.Fprintf(os.Stderr, "done!\n")
-	return channels, nil
-}
-
-func (c *SlackClient) users(params map[string]string) (*UsersResponse, error) {
+func (c *SlackClient) users() (*UsersResponse, error) {
 	body, err := c.get("users.list", nil)
 	if err != nil {
 		return nil, err
@@ -372,7 +237,7 @@ func (c *SlackClient) UsernameForID(id string) (string, error) {
 		return name, nil
 	}
 
-	ur, err := c.users(nil)
+	ur, err := c.users()
 	if err != nil {
 		return "", err
 	}
@@ -415,60 +280,6 @@ func (c *SlackClient) UsernameForID(id string) (string, error) {
 	return user.User.Name, nil
 }
 
-func (c *SlackClient) ChannelIDForName(name string) (string, error) {
-	if id, ok := c.cache.Channels[name]; ok {
-		return id, nil
-	}
-
-	channels, err := c.conversations()
-	if err != nil {
-		return "", err
-	}
-
-	c.cache.Channels = make(map[string]string)
-	for _, ch := range channels {
-		if !ch.Is_Channel {
-			fmt.Fprintf(os.Stderr, "Skipping non-channel %q\n", ch.Name)
-			continue
-		}
-		c.cache.Channels[ch.Name] = ch.ID
-	}
-
-	err = c.saveCache()
-	if err != nil {
-		return "", err
-	}
-
-	if id, ok := c.cache.Channels[name]; ok {
-		return id, nil
-	}
-
-	return "", fmt.Errorf("could not find any channel with name %q", name)
-}
-
 func (c *SlackClient) GetLocation() *time.Location {
 	return c.tz
-}
-
-func (c *SlackClient) SendMessage(channelID string, message string) (*SendMessageResponse, error) {
-	body, err := c.post("chat.postMessage",
-		map[string]string{}, &SendMessage{
-			Channel: channelID,
-			Text:    message,
-		})
-	if err != nil {
-		return nil, err
-	}
-
-	response := &SendMessageResponse{}
-	err = json.Unmarshal(body, response)
-	if err != nil {
-		return nil, err
-	}
-
-	if !response.OK {
-		return nil, fmt.Errorf("chat.postMessage response not OK: %s", body)
-	}
-
-	return response, nil
 }

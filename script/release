@@ -9,26 +9,31 @@
 set -e
 
 APP_ID="nobe4.slacked"
-VERSION="0.0.0"
+VERSION="$(git tag --points-at HEAD)"
 
-export GOFLAGS="--ldflags=-X=main.version=${VERSION}"
+[ "${VERSION}" == "" ] && echo "Missing tag for current commit" && exit 1
 
-fyne-cross darwin -arch='amd64,arm64' -app-id "$APP_ID"
-fyne-cross linux -arch='amd64,arm64'
-fyne-cross windows -arch='amd64,arm64' -app-id "$APP_ID"
+gh release create --generate-notes --prerelease --draft --verify-tag "${VERSION}"
+
+export GOFLAGS="--ldflags=-X=main.Version=${VERSION}"
 
 rm -rf ./dist
 mkdir -p ./dist
 
-mv fyne-cross/dist/linux-amd64/slacked.tar.xz dist/slacked-linux-amd64.tar.xz
-mv fyne-cross/dist/linux-arm64/slacked.tar.xz dist/slacked-linux-arm64.tar.xz
-mv fyne-cross/dist/windows-amd64/slacked.exe.zip dist/slacked-windows-amd64.zip
-mv fyne-cross/dist/windows-arm64/slacked.exe.zip dist/slacked-windows-arm64.zip
-(cd fyne-cross/dist/darwin-amd64 && zip -r ../../../dist/slacked-darwin-amd64.zip slacked.app)
-(cd fyne-cross/dist/darwin-arm64 && zip -r ../../../dist/slacked-darwin-arm64.zip slacked.app)
+fyne-cross linux -arch='amd64,arm64' -app-id "${APP_ID}"
+mv fyne-cross/dist/linux-amd64/slacked.tar.xz "dist/slacked-linux-amd64-${VERSION}.tar.xz"
+mv fyne-cross/dist/linux-arm64/slacked.tar.xz "dist/slacked-linux-arm64-${VERSION}.tar.xz"
 
-(cd dist && shasum -a 256 * > shasmums.txt)
+fyne-cross windows -arch='amd64,arm64' -app-id "${APP_ID}"
+mv fyne-cross/dist/windows-amd64/slacked.exe.zip "dist/slacked-windows-amd64-${VERSION}.zip"
+mv fyne-cross/dist/windows-arm64/slacked.exe.zip "dist/slacked-windows-arm64-${VERSION}.zip"
+
+fyne-cross darwin -arch='amd64,arm64' -app-id "${APP_ID}" -app-version "${VERSION}"
+(cd fyne-cross/dist/darwin-amd64 && zip -r "../../../dist/slacked-darwin-amd64-${VERSION}.zip" slacked.app)
+(cd fyne-cross/dist/darwin-arm64 && zip -r "../../../dist/slacked-darwin-arm64-${VERSION}.zip" slacked.app)
+
+(cd dist && shasum -a 256 * > "shasmums-${VERSION}.txt")
 
 rm -rf ./fyne-cross
 
-gh release create "${VERSION}" --generate-notes --prerelease --draft dist/*
+gh release upload "${VERSION}" dist/*

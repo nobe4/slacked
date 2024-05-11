@@ -14,8 +14,6 @@ import (
 	"time"
 
 	"github.com/rneatherway/slack"
-
-	"nhooyr.io/websocket"
 )
 
 type Cursor struct {
@@ -54,12 +52,6 @@ type SendMessageResponse struct {
 	Warning string  `json:"warning,omitempty"`
 	TS      string  `json:"ts,omitempty"`
 	Message Message `json:"message,omitempty"`
-}
-
-type RTMConnectResponse struct {
-	Ok    bool   `json:"ok"`
-	Error string `json:"error"`
-	URL   string `json:"url"`
 }
 
 type BotProfile struct {
@@ -479,39 +471,4 @@ func (c *SlackClient) SendMessage(channelID string, message string) (*SendMessag
 	}
 
 	return response, nil
-}
-
-func (c *SlackClient) ConnectToRTM() (*RTMClient, error) {
-	response, err := c.get("rtm.connect", nil)
-	if err != nil {
-		return nil, err
-	}
-
-	// This is a Tier 1 Slack API, which are allowed to call once a minute with
-	// some bursts. It would be nice to cache the URL result in case we need to
-	// reconnect quickly (for example if gh-slack is called in a loop by some
-	// external program). Although the URL is valid for 30 seconds, it seems
-	// that it can only be used once, so that isn't possible.
-	connectResponse := &RTMConnectResponse{}
-	err = json.Unmarshal(response, connectResponse)
-	if err != nil {
-		return nil, err
-	}
-
-	if !connectResponse.Ok {
-		return nil, fmt.Errorf("rtm.connect response not OK: %s", response)
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
-	defer cancel()
-
-	socketConnection, _, err := websocket.Dial(ctx, connectResponse.URL, &websocket.DialOptions{})
-	if err != nil {
-		return nil, err
-	}
-
-	return &RTMClient{
-		conn:        socketConnection,
-		slackClient: c,
-	}, err
 }

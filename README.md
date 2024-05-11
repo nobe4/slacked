@@ -1,19 +1,20 @@
-# Slacked
+# Slacked ↧
 
 GUI to export Slack threads into markdown.
 
 ![Icon.png](./Icon.png)
-> ↧ on a white background.
 
 > [!NOTE]
 > Early stage, sorry for the terrible code.
+
+![Image](https://github.com/nobe4/slacked/assets/2452791/c11a282f-411f-4cca-a79d-b80c5cb7c6d7)
 
 This work relies heavily on the amazing [`gh-slack`](https://github.com/rneatherway/gh-slack).
 Go give it a :star:!
 
 ## Install
 
-Download the [latest release](https://github.com/nobe4/slacked/releases).
+Download the [latest release](https://github.com/nobe4/slacked/releases/latest).
 
 > [!IMPORTANT]
 > The app is currently not signed, I will need to work on that.

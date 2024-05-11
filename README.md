@@ -9,7 +9,7 @@ GUI to export Slack threads into markdown.
 > [!NOTE]
 > Early stage, sorry for the terrible code.
 
-This work is heavily relying on the amazing [`gh-slack`](https://github.com/rneatherway/gh-slack).
+This work relies heavily on the amazing [`gh-slack`](https://github.com/rneatherway/gh-slack).
 Go give it a :star:!
 
 ## Install
@@ -17,8 +17,8 @@ Go give it a :star:!
 Download the [latest release](https://github.com/nobe4/slacked/releases).
 
 > [!IMPORTANT]
-> The app is currently not signed, and on macOS you might need to run:
-> `xattr -r -d com.apple.quarantine path/to/slacked.app`
+> The app is currently not signed.
+> - on macOS you might need to run: `xattr -r -d com.apple.quarantine path/to/slacked.app`
 
 ## Use
 

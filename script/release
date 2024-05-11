@@ -29,4 +29,6 @@ mv fyne-cross/dist/windows-arm64/slacked.exe.zip dist/slacked-windows-arm64.zip
 
 (cd dist && shasum -a 256 * > shasmums.txt)
 
+rm -rf ./fyne-cross
+
 gh release create "${VERSION}" --generate-notes --prerelease --draft dist/*

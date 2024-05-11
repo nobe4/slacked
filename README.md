@@ -3,8 +3,7 @@
 GUI to export Slack threads into markdown.
 
 ![Icon.png](./Icon.png)
-
-> Logo: ↧ on a white background.
+> ↧ on a white background.
 
 > [!NOTE]
 > Early stage, sorry for the terrible code.
@@ -17,8 +16,9 @@ Go give it a :star:!
 Download the [latest release](https://github.com/nobe4/slacked/releases).
 
 > [!IMPORTANT]
-> The app is currently not signed.
+> The app is currently not signed, I will need to work on that.
 > - on macOS you might need to run: `xattr -r -d com.apple.quarantine path/to/slacked.app`
+> - on windows you might need to run something? (I don't have a windows machine)
 
 ## Use
 

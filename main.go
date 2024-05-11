@@ -18,12 +18,12 @@ import (
 )
 
 var (
-	version string
+	Version string
 )
 
 func main() {
 	a := app.New()
-	w := a.NewWindow(fmt.Sprintf("Slacked (%s)", version))
+	w := a.NewWindow(fmt.Sprintf("Slacked (%s)", Version))
 	w.Resize(fyne.Size{Width: 600, Height: 400})
 
 	output := &widget.TextGrid{}
